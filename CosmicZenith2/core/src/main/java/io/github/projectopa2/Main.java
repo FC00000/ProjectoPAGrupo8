@@ -1,4 +1,3 @@
-//  teste
 package io.github.projectopa2;
 import com.badlogic.gdx.*;
 import com.badlogic.gdx.audio.Sound;
@@ -8,37 +7,23 @@ import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.utils.*;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
-enum GameState { // Estados do Jogo
-    PLAYING,     // A jogar, utilizador tem controlo da nave
-    GAME_END     // No menu, utilizador só tem controlo do rato
+enum GameState {
+    PLAYING,
+    GAME_END
 }
-
 public class Main implements ApplicationListener {
-    SpriteBatch spriteBatch; // Usado para gerar imagens 2D no ecrã
+    SpriteBatch spriteBatch;
     FitViewport viewport;
 
     // Texturas
-    Texture backgroundTexture;
-    Texture playerTextureR; // Texturas da nave do jogador
-    Texture playerTextureL;
-    Texture playerTextureU;
-    Texture playerTextureD;
-    Texture enemyTextureR; // Texturas do inimigo
-    Texture enemyTextureL;
-    Texture enemyTextureU;
-    Texture enemyTextureD;
-    Texture wallTexture;     //textura da parede
-    Texture heartTexture;    //textura do coração das vidas
-    Texture portalTexture;   //textura do portal
-    Texture gameOverTexture; //textura do menu game-over
-    Texture gameWonTexture;  //textura do menu game-won
-    Texture treasureTexture; // Textura do tesouro
-    Texture laserVerticalTexture; // Texturas do laser
-    Texture laserHorizontalTexture;
+    Texture backgroundTexture, playerTextureDir, playerTextureEsq, playerTextureUp, playerTextureDown;
+    Texture enemyTextureDir, enemyTextureEsq, enemyTextureCima, enemyTextureBaixo;
+    Texture wallTexture, heartTexture, portalTexture, gameOverTexture, gameWonTexture, treasureTexture;
+    Texture laserVerticalTexture, laserHorizontalTexture;
 
     Sound enemydeathSound;
-    //BitmapFont font;
-    //GlyphLayout layout;
+    BitmapFont font;
+    GlyphLayout layout;
     Rectangle restartButtonBounds;
 
     Sprite playerSprite;
@@ -60,8 +45,8 @@ public class Main implements ApplicationListener {
     float moveDelay = 0.15f; // delay em segundos de cada movimento do jogador
     float moveTimer = 0f;    // timer para o movimento do jogador (É feito o reset após movimento)
 
-    float enemyMoveTimer = 0f;
-    float enemyMoveDelay = 0.75f; // moves every 0.75 seconds
+    //float enemyMoveTimer = 0f;
+    //float enemyMoveDelay = 0.75f; // move a cada 0.75 segundos
 
     @Override
     public void create() {
@@ -69,28 +54,34 @@ public class Main implements ApplicationListener {
         viewport = new FitViewport(MAP_WIDTH, MAP_HEIGHT);
 
         backgroundTexture = new Texture("background.png");
-        playerTextureR = new Texture("spaceshipR.png");
-        playerTextureL = new Texture("spaceshipL.png");
-        playerTextureU = new Texture("spaceshipU.png");
-        playerTextureD = new Texture("spaceshipD.png");
-        enemyTextureR = new Texture("enemyR.png");
-        enemyTextureL = new Texture("enemyL.png");
-        enemyTextureU = new Texture("enemyU.png");
-        enemyTextureD = new Texture("enemyD.png");
-        wallTexture = new Texture("rock.png");
+        playerTextureDir = new Texture("spaceshipR.png");
+        playerTextureEsq = new Texture("spaceshipL.png");
+        playerTextureUp = new Texture("spaceshipU.png");
+        playerTextureDown = new Texture("spaceshipD.png");
+        enemyTextureDir = new Texture("enemyR.png");
+        enemyTextureEsq = new Texture("enemyL.png");
+        enemyTextureCima = new Texture("enemyU.png");
+        enemyTextureBaixo = new Texture("enemyD.png");
+
+        wallTexture = new Texture("rocha.png");
         heartTexture = new Texture("heart.png");
         portalTexture = new Texture("portal.png");
         gameOverTexture = new Texture("gameover.png");
         gameWonTexture = new Texture("gamewon.png");
         treasureTexture = new Texture("treasure.png");
+
         laserVerticalTexture = new Texture("laserVertical.png");
         laserHorizontalTexture = new Texture("laserHorizontal.png");
 
         enemydeathSound = Gdx.audio.newSound(Gdx.files.internal("enemydeath.mp3"));
 
+        font = new BitmapFont();
+        font.getData().setScale(0.1f);
+        layout = new GlyphLayout();
+
         restartButtonBounds = new Rectangle(6f, 4f, 4f, 2f);
 
-        playerSprite = new Sprite(playerTextureR);
+        playerSprite = new Sprite(playerTextureDir);
         playerSprite.setSize(1, 1);
         playerGridPosition = new Vector2();
 
@@ -98,249 +89,215 @@ public class Main implements ApplicationListener {
         enemies = new Array<>();
 
         maps = new Array<>();
-        maps.add(GameMap.generateFirstMap(enemyTextureL, MAP_WIDTH, MAP_HEIGHT));
-        maps.add(GameMap.generateSecondMap(enemyTextureL, MAP_WIDTH, MAP_HEIGHT));
-        maps.add(GameMap.generateThirdMap(enemyTextureL, MAP_WIDTH, MAP_HEIGHT));
+        maps.add(GameMap.generateFirstMap(enemyTextureEsq, MAP_WIDTH, MAP_HEIGHT));
+        maps.add(GameMap.generateSecondMap(enemyTextureEsq, MAP_WIDTH, MAP_HEIGHT));
+        maps.add(GameMap.generateThirdMap(enemyTextureEsq, MAP_WIDTH, MAP_HEIGHT));
         loadMap(0);
     }
 
-    private void loadMap(int index) { //Carr
-        currentMapIndex = index;            // Carrega o mapa colocado na função (0, 1 ou 2)
-        GameMap current = maps.get(index);  // Coloca o mapa em questão como mapa corrente
-        enemies = current.enemies;          // Carrega os inimigos do mapa
-        playerGridPosition.set(current.spawnNode.x, current.spawnNode.y); // Atualiza a posição do jogador
-        updatePlayerWorldPosition();        // Atualiza a posição da sprite do jogador
+    private void loadMap(int index) {
+        currentMapIndex = index;
+        GameMap current = maps.get(index);
+        enemies = current.enemies;
+        playerGridPosition.set(current.spawnNode.x, current.spawnNode.y);
+        updatePlayerWorldPosition();
     }
 
-    private void updatePlayerWorldPosition() { // Metodo para atualizar a posição da sprite do jogador no mapa
+    private void updatePlayerWorldPosition() {
         playerSprite.setPosition(playerGridPosition.x, playerGridPosition.y);
     }
 
     private void PlayerInput() {
 
-        if (moveTimer < moveDelay) return; // Se o moveTimer for menor que a delay, não permite movimento , garante que o movimento não é instantaneo
+        if (moveTimer < moveDelay) return; // Se o Time for menor que a delay, não permite movimento
 
-        Vector2 target = new Vector2(playerGridPosition); // Define o "target" como a posição atual
-        boolean moved = false; // Define
+        Vector2 target = new Vector2(playerGridPosition);
+        boolean moved = false;
 
-    // Controlos de movimneto do Jogador
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
             target.x += 1;
             lastMoveDirection.set(1, 0);
-            playerSprite.setTexture(playerTextureR);
+            playerSprite.setTexture(playerTextureDir);
             moved = true;
         }
-        else if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A)) {
+        else if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             target.x -= 1;
             lastMoveDirection.set(-1, 0);
-            playerSprite.setTexture(playerTextureL);
+            playerSprite.setTexture(playerTextureEsq);
             moved = true;
         }
-        else if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W)) {
+        else if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
             target.y += 1;
             lastMoveDirection.set(0, 1);
-            playerSprite.setTexture(playerTextureU);
+            playerSprite.setTexture(playerTextureUp);
             moved = true;
         }
-        else if (Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S)) {
+        else if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
             target.y -= 1;
             lastMoveDirection.set(0, -1);
-            playerSprite.setTexture(playerTextureD);
+            playerSprite.setTexture(playerTextureDown);
             moved = true;
         }
 
-        if (moved) { // Se moveu
-            if (isWalkable(target)) { // Se a posição permite avançar
-                playerGridPosition.set(target); // Atualiza a posição do jogador para onde este quer ir
+        if (isWalkable(target)) playerGridPosition.set(target);
+        updatePlayerWorldPosition();
+
+        if (moved) { //
+            if (isWalkable(target)) {
+                playerGridPosition.set(target);
                 updatePlayerWorldPosition();
 
-            moveTimer = 0f;
+                moveTimer = 0f;
             }// Faz reset do timer de movimento após tentativa de movimento
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) { // Valida o Clique no "Espaço"
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE))
             projectiles.add(new Projectile(playerGridPosition.cpy(), lastMoveDirection.cpy()));
-        } // Cria um novo laser na posição do jogador com a direção do jogador
     }
 
-    private void MenuInput() { // função de input do menu para clicar no restart
-        if (Gdx.input.justTouched()) { //Valida se o utilizador clicou no ecrã
-            Vector2 touch = new Vector2(Gdx.input.getX(), Gdx.input.getY()); //Guarda a posição do click
-            viewport.unproject(touch); //Altera a posição do click para o tipo de cordenadas utilizadas pelo FitViewport
-            if (restartButtonBounds.contains(touch)) { // Se o click foi dentro do botão restart
-                restartGame(); // Restart do jogo
+    private void MenuInput() {
+        if (Gdx.input.justTouched()) {
+            Vector2 touch = new Vector2(Gdx.input.getX(), Gdx.input.getY());
+            viewport.unproject(touch);
+            if (restartButtonBounds.contains(touch)) {
+                restartGame();
             }
         }
     }
 
-    private boolean isWalkable(Vector2 pos) { //Função valida se uma determinada posição do mapa permite andar
-        if (pos.x < 0 || pos.x >= MAP_WIDTH || pos.y < 0 || pos.y >= MAP_HEIGHT) {
-            return false; //Se a posição está fora do mapa, devolve false
-        }
-        return !maps.get(currentMapIndex).nodes[(int) pos.x][(int) pos.y].isWall; //valida a posição da node inserida na função com o mapa relevante e devolve false (Se não poder andar) ou true (se for permito andar)
+
+    private boolean isWalkable(Vector2 pos) {
+        if (pos.x < 0 || pos.x >= MAP_WIDTH || pos.y < 0 || pos.y >= MAP_HEIGHT) return false;
+        return !maps.get(currentMapIndex).nodes[(int) pos.x][(int) pos.y].isWall;
     }
 
     private void logic() {
+        for (Enemy enemy : enemies) {
+            GameMap map = maps.get(currentMapIndex);
+            MapNode playerNode = map.nodes[(int) playerGridPosition.x][(int) playerGridPosition.y];
+            if (enemy.canMove(Gdx.graphics.getDeltaTime())) {
+                MapNode enemyNode = map.nodes[(int) enemy.gridPosition.x][(int) enemy.gridPosition.y];
+                MapNode nextNode = getNextStep(enemyNode, playerNode);
+                Vector2 next = new Vector2(nextNode.x, nextNode.y);
+                Vector2 movement = new Vector2(next).sub(enemy.gridPosition);
 
-        if (enemyMoveTimer >= enemyMoveDelay) { // Se o temporizador do movimento do inimigo for maior ou igual do que o delay, este pode avançar
-            GameMap map = maps.get(currentMapIndex); // Devolve o mapa corrente
-            MapNode playerNode = map.nodes[(int) playerGridPosition.x][(int) playerGridPosition.y]; // Devolve a node do jogador
-            for (Enemy enemy : enemies) { // Para todos os inimigos
-                MapNode enemyNode = map.nodes[(int) enemy.gridPosition.x][(int) enemy.gridPosition.y]; // Devolve as nodes dos inimigos
-                MapNode nextNode = getNextStep(enemyNode, playerNode); // Usa a função getNextStep para devolver a melhor para o movimento de cada inimigo
-                Vector2 next = new Vector2(nextNode.x, nextNode.y);           // Coloca a node anterior no "next" (Proxima node)
-                Vector2 direction = new Vector2(next).sub(enemy.gridPosition); // Devolve a direção do movimento a subtraindo a posição nova pela posição anterior
+                enemy.gridPosition.set(next);
+                enemy.sprite.setPosition(next.x, next.y);
 
-                enemy.gridPosition.set(next);             // Define a posição do inimigo para a melhor node (next) - Logicamente
-                enemy.sprite.setPosition(next.x, next.y); // Define a posição do inimigo para a melhor node (next) - Visualmente
+                if (movement.x > 0) enemy.sprite.setTexture(enemyTextureDir);
+                else if (movement.x < 0) enemy.sprite.setTexture(enemyTextureEsq);
+                else if (movement.y > 0) enemy.sprite.setTexture(enemyTextureCima);
+                else if (movement.y < 0) enemy.sprite.setTexture(enemyTextureBaixo);
 
-                if (direction.x > 0) { // Texturas Direcionais basedas na direção dos inimigos
-                    enemy.sprite.setTexture(enemyTextureR); //
-                }
-                else if (direction.x < 0) {
-                    enemy.sprite.setTexture(enemyTextureL);
-                }
-                else if (direction.y > 0) {
-                    enemy.sprite.setTexture(enemyTextureU);
-                }
-                else if (direction.y < 0) {
-                    enemy.sprite.setTexture(enemyTextureD);
-                }
-
-                if (enemy.gridPosition.equals(playerGridPosition)) { // Se a posição do inimigo for igual à do jogador
-                    playerLives--;      // Retira uma vida
-                    if (playerLives == 0) {
-                        gameState = GameState.GAME_END; // Se as vidas forem iguais a zero, altera o estado do jogo para GAME_END
-                    }
-                    else {
-                        playerGridPosition.set(map.spawnNode.x, map.spawnNode.y); //Se não, faz spawn do jogador na node do spawn
-                    }
+                if (enemy.gridPosition.epsilonEquals(playerGridPosition, 0.1f)) {
+                    playerLives--;
+                    if (playerLives <= 0) gameState = GameState.GAME_END;
+                    else playerGridPosition.set(map.spawnNode.x, map.spawnNode.y);
                 }
             }
-            enemyMoveTimer = 0f; // Reset do timer para movimento do inimigo
+            //enemyMoveTimer = 0f;
         }
 
-        Array<Projectile> toRemove = new Array<>(); // Lista para colocar todos os projéteis/lasers que se vai remover
-
-        for (Projectile p : projectiles) { // Para todos os projéteis/lasers
-            p.position.add(p.direction);   // Adiciona à posição do laser a sua direção e movimento
-            if (!isWalkable(p.position)) { // Se a posição não for uma superficie onde o jogador ou o inimigo podem andar
-                toRemove.add(p); continue; // Remove o laser do mapa
-            }
-            for (Enemy enemy : enemies) { // Para todos os inimigos
-                if (enemy.gridPosition.equals(p.position)) { // Se a posição do inimigo for igual à posição do laser
-                    enemies.removeValue(enemy, true); // Remove o inimigo do mapa
-                    enemydeathSound.play();  //  Toca um som
-                    toRemove.add(p); // Remove o Laser do mapa
+        Array<Projectile> toRemove = new Array<>();
+        for (Projectile p : projectiles) {
+            p.position.add(p.direction);
+            if (!isWalkable(p.position)) { toRemove.add(p); continue; }
+            for (Enemy enemy : enemies) {
+                if (enemy.gridPosition.epsilonEquals(p.position, 0.1f)) {
+                    enemies.removeValue(enemy, true);
+                    enemydeathSound.play();
+                    toRemove.add(p);
                     break;
                 }
             }
         }
-        projectiles.removeAll(toRemove, true); // Remove todos os projéteis/lasers desnecessários
+        projectiles.removeAll(toRemove, true);
 
-        GameMap current = maps.get(currentMapIndex); // Devolve o mapa em que o jogador está
-        if (current.portalNode != null && playerGridPosition.equals(new Vector2(current.portalNode.x, current.portalNode.y))) {
-                loadMap(currentMapIndex + 1); // Se existe um portal e o jogador está na node do portal faz load do próximo mapa
-        }
-        if (current.treasureNode != null && playerGridPosition.equals(new Vector2(current.treasureNode.x, current.treasureNode.y))) {
-            gameState = GameState.GAME_END; // Se existe um tesouro e o jogador está na node do tesouro altera o estado do jogo para //GAME_END
-        }
+        GameMap current = maps.get(currentMapIndex);
+        if (current.portalNode != null && playerGridPosition.epsilonEquals(new Vector2(current.portalNode.x, current.portalNode.y), 0.1f))
+            if (currentMapIndex + 1 < maps.size) loadMap(currentMapIndex + 1);
+
+        if (current.treasureNode != null && playerGridPosition.epsilonEquals(new Vector2(current.treasureNode.x, current.treasureNode.y), 0.1f))
+            gameState = GameState.GAME_END;
     }
 
-    private MapNode getNextStep(MapNode from, MapNode to) {     // função para determinar a próxima melhor node para o caminho dos inimigos
-        MapNode best = from;                                    // Node que vai ser devolvida no fim da função, começa no inicio (from)
-        float bestDist = fromDistance(from, to);                // Calcula a distancia entre as duas nodes
-        for (MapNode neighbor : from.neighbors) {               // Para cada node vizinha
-            float dist = fromDistance(neighbor, to);            // dist -> distancia da node vizinha para a node final
-            if (dist < bestDist) {                              // Se a distancia da node vizinha for menor que a melhor distancia
-                best = neighbor;                                // Altera a melhor node para a vizinha
-                bestDist = dist;                                // Altera a melhor distancia para a distancia da vizinha até à final
+    private MapNode getNextStep(MapNode from, MapNode to) {
+        MapNode best = from;
+        float bestDist = fromDistance(from, to);
+        for (MapNode neighbor : from.neighbors) {
+            float dist = fromDistance(neighbor, to);
+            if (dist < bestDist) {
+                best = neighbor;
+                bestDist = dist;
             }
         }
-        return best; //Devolve a melhor node para o inimigo se deslocar
+        return best;
     }
 
     private float fromDistance(MapNode a, MapNode b) {
-        return Vector2.dst2(a.x, a.y, b.x, b.y); // Calcula a distancia entre as duas nodes A e B
+        return Vector2.dst2(a.x, a.y, b.x, b.y);
     }
 
     private void draw() {
-        ScreenUtils.clear(Color.BLACK); // Limpa o ecrã.
-        viewport.apply(); //Aplica o tamanho definida anteriormente para o viewport
-        spriteBatch.setProjectionMatrix(viewport.getCamera().combined); //Garante que tudo é desenhado na posição e tamanho correto.
-
+        ScreenUtils.clear(Color.BLACK);
+        viewport.apply();
+        spriteBatch.setProjectionMatrix(viewport.getCamera().combined);
         spriteBatch.begin();
-        spriteBatch.draw(backgroundTexture, 0, 0, MAP_WIDTH, MAP_HEIGHT); // Desenha o background com o tamanho da janela
-        playerSprite.draw(spriteBatch);     // Desenha a sprite do jogador
-        for (Enemy enemy : enemies) {       // Para todos os inimigos
-            enemy.sprite.draw(spriteBatch); //D esenha a sprite dos inimigos
+
+        spriteBatch.draw(backgroundTexture, 0, 0, MAP_WIDTH, MAP_HEIGHT);
+        playerSprite.draw(spriteBatch);
+        for (Enemy enemy : enemies) enemy.sprite.draw(spriteBatch);
+
+        GameMap current = maps.get(currentMapIndex);
+        if (current.portalNode != null) spriteBatch.draw(portalTexture, current.portalNode.x, current.portalNode.y, 1, 1);
+        if (current.treasureNode != null) spriteBatch.draw(treasureTexture, current.treasureNode.x, current.treasureNode.y, 1, 1);
+
+        for (int x = 0; x < MAP_WIDTH; x++)
+            for (int y = 0; y < MAP_HEIGHT; y++)
+                if (current.nodes[x][y].isWall)
+                    spriteBatch.draw(wallTexture, x, y, 1, 1);
+
+        for (int i = 0; i < playerLives; i++)
+            spriteBatch.draw(heartTexture, 0.2f + i * 0.7f, MAP_HEIGHT - 0.8f, 0.6f, 0.6f);
+
+        for (Projectile p : projectiles) {
+            Texture laser = (Math.abs(p.direction.x) > 0) ? laserHorizontalTexture : laserVerticalTexture;
+            spriteBatch.draw(laser, p.position.x, p.position.y, 1, 1);
         }
 
-        GameMap current = maps.get(currentMapIndex); //Devolve o mapa a ser usado no momento
-        if (current.portalNode != null) { //Se exitirem portais no mapa
-            spriteBatch.draw(portalTexture, current.portalNode.x, current.portalNode.y, 1, 1); // Usa a textura do portal nas nodes relevantes
-        }
-        if (current.treasureNode != null) { //Se exitirem tesouros no mapa
-            spriteBatch.draw(treasureTexture, current.treasureNode.x, current.treasureNode.y, 1, 1); // Usa a textura do tesouro nas nodes relevantes
-        }
-
-        for (int x = 0; x < MAP_WIDTH; x++) // Para x
-            for (int y = 0; y < MAP_HEIGHT; y++) // Para y
-                if (current.nodes[x][y].isWall) // Se a node é uma parede
-                    spriteBatch.draw(wallTexture, x, y, 1, 1); // Usar a textura da parede para essa node
-
-        for (int i = 0; i < playerLives; i++) // Para o numero de vidas que o jogador tem
-            spriteBatch.draw(heartTexture, 0.2f + i * 0.7f, MAP_HEIGHT - 0.8f, 0.6f, 0.6f); // Criar o mesmo numero de corações no topo esquerdo do ecrã
-
-        for (Projectile p : projectiles) { // Para todos os projéteis
-            Texture laser; // textura do laser
-            if (Math.abs(p.direction.x) > 0) { // Se o absoluto da direção der um x > 0, ou seja, horizontal
-                laser = laserHorizontalTexture; // Usar textura horizontal
-            } else {
-                laser = laserVerticalTexture; // Usar textura vertical
-            }
-            spriteBatch.draw(laser, p.position.x, p.position.y, 1, 1); // Carrega a textura escolha no if anterior
-        }
         spriteBatch.end();
 
-        if (gameState == GameState.GAME_END) { // Se o estado do jogo for "GAME_END"
+        if (gameState == GameState.GAME_END) {
             spriteBatch.begin();
-            float width = 6f;  // Tamanho da imagem (Largura)
-            float height = 4f; // Tamanho da imagem (Altura)
-            float x = (viewport.getWorldWidth() - width) / 2; // Calcula o ponto inicial vertical para a nova imagem ficar centrada
-            float y = (viewport.getWorldHeight() - height) / 2; // Calcula o ponto inicial horizontal para a nova imagem ficar centrada
-            spriteBatch.draw((playerLives == 0 ? gameOverTexture : gameWonTexture), x, y, width, height); //
-            if (playerLives == 0) { //Se as Vidas forem igual a 0
-                spriteBatch.draw(gameOverTexture, x, y, width, height); //Mostra a imagem do Game-Over
-            } else { //Se não
-                spriteBatch.draw(gameWonTexture, x, y, width, height); //Mostra a imagem do Game-Won
-            }
+            float width = 6f, height = 4f;
+            float x = (viewport.getWorldWidth() - width) / 2;
+            float y = (viewport.getWorldHeight() - height) / 2;
+            spriteBatch.draw((playerLives == 0 ? gameOverTexture : gameWonTexture), x, y, width, height);
             spriteBatch.end();
         }
     }
 
-    private void restartGame() { // Recomeça o Jogo
+    private void restartGame() {
         playerLives = 3;        // Faz reset das Vidas para 3 (Pode ser alterado)
         projectiles.clear();    // Limpa os projéteis utilizados
         enemies.clear();        // Limpa os inimigos utilizados
         maps.clear();           // Limpa os mapa utilizados
-        maps.add(GameMap.generateFirstMap(enemyTextureL, MAP_WIDTH, MAP_HEIGHT));  //Carrega o primeiro Mapa
-        maps.add(GameMap.generateSecondMap(enemyTextureL, MAP_WIDTH, MAP_HEIGHT)); //Carrega o segundo Mapa
-        maps.add(GameMap.generateThirdMap(enemyTextureL, MAP_WIDTH, MAP_HEIGHT));  //Carrega o terceiro Mapa
+        maps.add(GameMap.generateFirstMap(enemyTextureEsq, MAP_WIDTH, MAP_HEIGHT));
+        maps.add(GameMap.generateSecondMap(enemyTextureEsq, MAP_WIDTH, MAP_HEIGHT));
+        maps.add(GameMap.generateThirdMap(enemyTextureEsq, MAP_WIDTH, MAP_HEIGHT));
         loadMap(0);                 //Faz load do primeiro mapa
         gameState = GameState.PLAYING;    //Altera o estado do jogo para "PLAYING"
     }
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, true); // Atualiza a nova resolução da janela e centra a imagem
+    @Override public void resize(int width, int height) {
+        viewport.update(width, height, true);
     }
 
     @Override
     public void render() {
-        float delta = Gdx.graphics.getDeltaTime(); //define variável com o tempo em segundos desde o ultimo frame
+        float delta = Gdx.graphics.getDeltaTime(); //define varevel com o tempo em segundos desde o ultimo frame
         moveTimer += delta;         //Adiciona o tempo delta anterior ao timer de movimendo do jogador
-        enemyMoveTimer += delta;    //Adiciona o tempo delta anterior ao timer de movimendo dos inimigos
+        //enemyMoveTimer += delta;    //Adiciona o tempo delta anterior ao timer de movimendo dos inimigos
 
         if (gameState == GameState.PLAYING) { //Situação de jogo
             PlayerInput();  //Input feito no jogo (Movimento e disparar)
@@ -351,17 +308,10 @@ public class Main implements ApplicationListener {
         draw();
     }
 
-    @Override
-    public void pause() {
-
-    }
-    @Override
-    public void resume() {
-
-    }
-    @Override
-    public void dispose() {
-        heartTexture.dispose(); //Remove a textura da memória
+    @Override public void pause() {}
+    @Override public void resume() {}
+    @Override public void dispose() {
+        heartTexture.dispose();
     }
 }
 

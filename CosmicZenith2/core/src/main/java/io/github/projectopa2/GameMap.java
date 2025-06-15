@@ -2,7 +2,11 @@ package io.github.projectopa2;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.utils.Array;
 
+
 public class GameMap {
+
+    private static GameMap instance;  //  Instance Singleton
+
     public MapNode[][] nodes; // Grid 2D com as nodes
     public Array<MapNode> allNodes = new Array<>(); // Lista das nodes do mapa
     public MapNode spawnNode;       // Posição do spawn de cada mapa
@@ -37,7 +41,8 @@ public class GameMap {
         map.treasureNode = null;            // Onde está o tesouro neste mapa (Não existe)
 
         map.enemies = new Array<>();        // Lista dos inimigos
-        map.enemies.add(Enemy.createEnemy(enemyTexture, 15, 8)); //Cria um novo inimigo e coloca-o na lista
+        map.enemies.add(EnemyFactory.createEnemy("FastChase",enemyTexture, 15, 8)); //Cria um novo inimigo e coloca-o na lista
+
         return map;
     }
 
@@ -66,8 +71,8 @@ public class GameMap {
         map.treasureNode = null;
 
         map.enemies = new Array<>();
-        map.enemies.add(Enemy.createEnemy(enemyTexture, 14, 1));
-        map.enemies.add(Enemy.createEnemy(enemyTexture, 8, 8));
+        map.enemies.add(EnemyFactory.createEnemy("NormalWander" , enemyTexture, 14, 1));
+        map.enemies.add(EnemyFactory.createEnemy("NormalWander" ,  enemyTexture, 8, 8));
         return map;
     }
 
@@ -96,26 +101,26 @@ public class GameMap {
         map.treasureNode = map.nodes[14][8];
 
         map.enemies = new Array<>();
-        map.enemies.add(Enemy.createEnemy(enemyTexture, 5, 5));
-        map.enemies.add(Enemy.createEnemy(enemyTexture, 10, 2));
-        map.enemies.add(Enemy.createEnemy(enemyTexture, 14, 8));
+        map.enemies.add(EnemyFactory.createEnemy("SlowChase",enemyTexture, 5, 5));
+        map.enemies.add(EnemyFactory.createEnemy("SlowChase",enemyTexture, 10, 2));
+        map.enemies.add(EnemyFactory.createEnemy("FastChase",enemyTexture, 14, 8));
 
         return map;
     }
 
+    //Função para conectar todas as nodes do mapa entre si e evitar as paredes
     private static void connectNeighbors(GameMap map, int width, int height) {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                MapNode node = map.nodes[x][y];
-                if (node.isWall) continue;
-
-                for (int dx = -1; dx <= 1; dx++) {
+        for (int x = 0; x < width; x++) {                                           // Para todos os X do mapa
+            for (int y = 0; y < height; y++) {                                      // Para todos os Y do mapa
+                MapNode node = map.nodes[x][y];                                     // Acede à node nas coordenadas
+                if (node.isWall) continue;                                          // Se for uma parede, sair do loop (Não fazer nada)
+                for (int dx = -1; dx <= 1; dx++) {                                  // Para todas as nodes à volta das coordenadas atuais (3x3)
                     for (int dy = -1; dy <= 1; dy++) {
-                        if (Math.abs(dx + dy) != 1) continue; // no diagonals
-                        int nx = x + dx, ny = y + dy;
-                        if (nx >= 0 && ny >= 0 && nx < width && ny < height) {
-                            MapNode neighbor = map.nodes[nx][ny];
-                            if (!neighbor.isWall) node.neighbors.add(neighbor);
+                        if (Math.abs(dx + dy) != 1) continue;                       // Se o absoluto de dx+dy da node for diferente de 1 , sair do loop, isto considera a propria node e todas as nodes diagonais (Se quisermos adicionar movimento diagonal esta linha pode ser alterada)
+                        int nx = x + dx, ny = y + dy;                               // Calcula as coordenadas do novo Neighbor/Vizinho
+                        if (nx >= 0 && ny >= 0 && nx < width && ny < height) {      // Avançar apenas se o a node estiver dentro do mapa
+                            MapNode neighbor = map.nodes[nx][ny];                   // Acede à node nas coordenadas
+                            if (!neighbor.isWall) node.neighbors.add(neighbor);     // Se a node não for parede adiciona-a como Neighbor/Vizinha
                         }
                     }
                 }
